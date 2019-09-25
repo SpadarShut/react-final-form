@@ -651,7 +651,7 @@
       return beforeSubmit && beforeSubmit()
     })
 
-    var register = function register(callback) {
+    var register = function register(callback, omitInitialValue) {
       return form.registerField(name, callback, subscription, {
         afterSubmit: afterSubmit,
         beforeSubmit: function beforeSubmit() {
@@ -661,8 +661,7 @@
         getValidator: function getValidator() {
           return validateRef.current
         },
-        initialValue: initialValue,
-        value: _value !== undefined ? _value : initialValue,
+        initialValue: omitInitialValue ? undefined : initialValue,
         isEqual: isEqual,
         validateFields: validateFields
       })
@@ -674,10 +673,18 @@
         var initialState = {} // temporarily disable destroyOnUnregister
 
         var destroyOnUnregister = form.destroyOnUnregister
-        form.destroyOnUnregister = false
+        form.destroyOnUnregister = false // Avoid passing initialValue if the field value is present in form already
+        // as initialValue will overwrite value if a field is re-mounted
+
+        var formState = form.getState()
+
+        var _initialValue =
+          formState && formState.values && formState.values[name]
+
+        var omitInitialValue = _initialValue !== undefined
         register(function(state) {
           initialState = state
-        })() // return destroyOnUnregister to its original value
+        }, omitInitialValue)() // return destroyOnUnregister to its original value
 
         form.destroyOnUnregister = destroyOnUnregister
         return initialState
